@@ -1,21 +1,22 @@
+#%%
 import xarray as xr
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-tec_path = Path(__file__).with_name("12_year_avg.nc")
+#%%
+basedir = Path(__file__).parent/"data"
+tec_path = basedir/"tec"/"12_year_avg.nc"
 ds = xr.open_dataset(tec_path, engine="netcdf4")
 tec = ds["atec"].transpose("time", "lat", "lon")
-
+print(ds)
 tec_years = ds["time"].dt.year.values
 print("TEC years:", tec_years)
 
-# =========================
-# 2. 读 F30 CSV
-# =========================
-csv_path = Path(__file__).with_name("cls_radio_flux_f30.csv") 
+csv_path = basedir/"solar_proxies"/"cls_radio_flux_f30.csv"
 df = pd.read_csv(csv_path)
+
 
 print("\n=== RAW CSV HEAD ===")
 print(df.head())
@@ -39,6 +40,8 @@ df["f30"] = pd.to_numeric(df[f30_col], errors="coerce")
 print("\n=== PARSED HEAD ===")
 print(df[["date", "f30"]].head())
 
+
+#%%
 # =========================
 # 3. 按年份求 annual mean F30
 # =========================
@@ -50,6 +53,7 @@ print("\n=== ANNUAL F30 ===")
 print(f30_annual.head())
 print(f30_annual.tail())
 
+#%%
 # =========================
 # 4. 和 TEC 年份对齐
 # =========================
@@ -80,6 +84,8 @@ plt.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.show()
 
+
+#%%
 # 6. Figure 2: double-step trend using F30
 
 years = tec_years.astype(float)
