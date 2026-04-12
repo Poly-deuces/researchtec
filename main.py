@@ -2,7 +2,9 @@
 import xarray as xr
 import numpy as np
 import pandas as pd
+import scipy.stats as stats
 import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
 from pathlib import Path
 
 #%%
@@ -71,7 +73,7 @@ print("length =", len(f30_values))
 
 # 检查有没有缺失
 print("NaN count in annual F30:", np.isnan(f30_values).sum())
-
+print(len(tec_years), len(f30_values))
 
 # 5. 先画一下 annual F30 时间序列
 
@@ -83,6 +85,8 @@ plt.title("Annual mean corrected F30")
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.show()
+
+#%%
 
 
 #%%
