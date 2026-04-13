@@ -116,7 +116,6 @@ print("r² =", r2)
 
 #%%
 # 6. Figure 2: double-step trend using F30
-
 years = tec_years.astype(float)
 
 def compute_beta(tec_series, proxy_series, year_series):
@@ -128,8 +127,10 @@ def compute_beta(tec_series, proxy_series, year_series):
     """
     mask = np.isfinite(tec_series) & np.isfinite(proxy_series) & np.isfinite(year_series)
 
-    if mask.sum() < 10:
+    if mask.sum() != len(year_series):
         return np.nan
+   #if mask.sum() < 10:
+        #return np.nan
 
     tec_valid = tec_series[mask]
     proxy_valid = proxy_series[mask]
@@ -156,6 +157,8 @@ trend_map = np.full((nlat, nlon), np.nan, dtype=float)
 
 for i in range(nlat):
     for j in range(nlon):
+        if i % 10 == 0:
+            print(f"Processing lat index {i}/{nlat}...")
         tec_series = tec[:, i, j].values
         trend_map[i, j] = compute_beta(tec_series, f30_values, years)
 
