@@ -87,7 +87,32 @@ plt.tight_layout()
 plt.show()
 
 #%%
+# 纬度权重：cos(latitude)
+weights = np.cos(np.deg2rad(ds["lat"]))
+weights.name = "weights"
 
+# 加权全球平均，自动按 time 保留成一条年序列
+global_mean_tec = tec.weighted(weights).mean(dim=("lat", "lon"))
+
+print("\n=== GLOBAL MEAN TEC ===")
+print(global_mean_tec)
+print("shape =", global_mean_tec.shape)
+print("values =", global_mean_tec.values)
+
+# =========================
+# 6. 计算 r 和 r^2
+# =========================
+tec_values = global_mean_tec.values.astype(float)
+proxy_values = f30_values.astype(float)
+
+mask = np.isfinite(tec_values) & np.isfinite(proxy_values)
+
+r = np.corrcoef(tec_values[mask], proxy_values[mask])[0, 1]
+r2 = r ** 2
+
+print("\n=== CORRELATION ===")
+print("r  =", r)
+print("r² =", r2)
 
 #%%
 # 6. Figure 2: double-step trend using F30
@@ -187,3 +212,5 @@ plt.text(
 )
 plt.tight_layout()
 plt.show()
+
+# %%
