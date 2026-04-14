@@ -110,7 +110,6 @@ mask = np.isfinite(tec_values) & np.isfinite(proxy_values)
 r = np.corrcoef(tec_values[mask], proxy_values[mask])[0, 1]
 r2 = r ** 2
 
-print("\n=== CORRELATION ===")
 print("r  =", r)
 print("r² =", r2)
 
@@ -127,9 +126,9 @@ def compute_beta(tec_series, proxy_series, year_series):
     """
     mask = np.isfinite(tec_series) & np.isfinite(proxy_series) & np.isfinite(year_series)
 
-    if mask.sum() != len(year_series):
+    if mask.sum() != len(year_series):    
         return np.nan
-   #if mask.sum() < 10:
+    #if mask.sum() < 10:
         #return np.nan
 
     tec_valid = tec_series[mask]
@@ -173,9 +172,7 @@ trend_da = xr.DataArray(
 print("\n=== TREND DATAARRAY ===")
 print(trend_da)
 
-# =========================
-# 7. 画 trend map
-# =========================
+#trend map
 plt.figure(figsize=(12, 4))
 trend_da.plot(
     x="lon",
