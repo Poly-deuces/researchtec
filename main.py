@@ -4,27 +4,21 @@ import numpy as np
 import pandas as pd
 import scipy.stats as stats
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 import cartopy.crs as ccrs
 from pathlib import Path
 
 #%%
-basedir = Path(__file__).parent/"data"
-tec_path = basedir/"tec"/"12_year_avg.nc"
+basedir = Path(__file__).parent
+tec_path = basedir/"data"/"tec"/"12_year_avg.nc"
+csv_path = basedir/"data"/"solar_proxies"/"cls_radio_flux_f30.csv"
+output_path=basedir/"results"
+
 ds = xr.open_dataset(tec_path, engine="netcdf4")
 tec = ds["atec"].transpose("time", "lat", "lon")
-print(ds)
 tec_years = ds["time"].dt.year.values
-print("TEC years:", tec_years)
 
-csv_path = basedir/"solar_proxies"/"cls_radio_flux_f30.csv"
 df = pd.read_csv(csv_path)
-
-
-print("\n=== RAW CSV HEAD ===")
-print(df.head())
-print("\n=== RAW CSV COLUMNS ===")
-print(df.columns.tolist())
-
 
 date_col = df.columns[0]
 f30_col  = df.columns[1]
@@ -38,10 +32,6 @@ df["date"] = pd.to_datetime(df[date_col].astype(str).str.strip(), format="%Y %m 
 
 # 数值列转成 float
 df["f30"] = pd.to_numeric(df[f30_col], errors="coerce")
-
-print("\n=== PARSED HEAD ===")
-print(df[["date", "f30"]].head())
-
 
 #%%
 # =========================
@@ -75,16 +65,6 @@ print("length =", len(f30_values))
 print("NaN count in annual F30:", np.isnan(f30_values).sum())
 print(len(tec_years), len(f30_values))
 
-# 5. 先画一下 annual F30 时间序列
-
-plt.figure(figsize=(8, 4))
-plt.plot(merged["year"], merged["f30"], marker="o")
-plt.xlabel("Year")
-plt.ylabel("Annual mean F30 (SFU)")
-plt.title("Annual mean corrected F30")
-plt.grid(True, alpha=0.3)
-plt.tight_layout()
-plt.show()
 
 #%%
 # 纬度权重：cos(latitude)
@@ -173,7 +153,7 @@ print("\n=== TREND DATAARRAY ===")
 print(trend_da)
 
 #trend map
-fig=plt.figure(figsize=(12, 5))
+fig2_global=plt.figure(figsize=(12, 5))
 ax=plt.axes(projection=ccrs.Mollweide())
 trend_da.plot(
     ax=ax,
@@ -188,6 +168,7 @@ trend_da.plot(
 ax.coastlines()
 ax.set_title("TEC trend at 12 LT (2000–2024), using F30 as solar proxy")
 
+fig2_global.savefig(output_path/"fig2_global.png",dpi=300, bbox_inches="tight")
 plt.tight_layout()
 plt.show()
 
@@ -202,7 +183,7 @@ print("Mean trend =", mean_trend)
 print("Std trend  =", std_trend)
 print("Valid grid count =", len(trend_values))
 
-plt.figure(figsize=(8, 5))
+fig2_trend=plt.figure(figsize=(8, 5))
 
 plt.hist(trend_values, bins=150, density=True)
 
@@ -225,7 +206,7 @@ plt.xlim(-0.8,0.6)
 plt.xticks(np.arange(-0.8,0.6,0.2))
 plt.ylim(0,5)
 plt.yticks(np.arange(0,5,1))
-
+fig2_trend.savefig(output_path/"fig2_trend.png",dpi=300, bbox_inches="tight")
 plt.tight_layout()
 plt.show()
 
