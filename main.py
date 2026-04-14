@@ -6,6 +6,7 @@ import scipy.stats as stats
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import cartopy.crs as ccrs
+import cartopy.feature as cfeature
 from pathlib import Path
 
 #%%
@@ -101,8 +102,8 @@ trend_map = np.full((nlat, nlon), np.nan, dtype=float)
 
 for i in range(nlat):
     for j in range(nlon):
-        if i % 10 == 0:
-            print(f"Processing lat index {i}/{nlat}...")
+        #if i % 10 == 0:
+            #print(f"Processing lat index {i}/{nlat}...")
         tec_series = tec[:, i, j].values
         trend_map[i, j] = compute_beta(tec_series, f30_values, years)
 
@@ -114,15 +115,20 @@ trend_da = xr.DataArray(
     name="trend"
 )
 
+cmap=cm.get_cmap("coolwarm").copy()
+cmap.set_bad((0,0,0,0))
 
 fig2_global=plt.figure(figsize=(12, 5))
 ax=plt.axes(projection=ccrs.Mollweide())
+ax.add_feature(cfeature.LAND, facecolor="lightgray", zorder=0)
+ax.add_feature(cfeature.OCEAN, facecolor="lightblue", zorder=0)
+
 trend_da.plot(
     ax=ax,
     transform=ccrs.PlateCarree(),
     x="lon",
     y="lat",
-    cmap="coolwarm",
+    cmap=cmap,
     robust=True,
     cbar_kwargs={"label": "Trend [TECU/year]","shrink": 0.8}
 )
@@ -146,7 +152,7 @@ print("Valid grid count =", len(trend_values))
 
 fig2_trend=plt.figure(figsize=(8, 5))
 
-plt.hist(trend_values, bins=150, density=True)
+plt.hist(trend_values, bins=200, density=True)
 
 plt.axvline(mean_trend,color="black", linestyle="--", label="Mean")
 plt.axvline(0, color="black", linestyle="-")
