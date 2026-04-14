@@ -26,6 +26,9 @@ f30_col  = df.columns[1]
 df["date"] = pd.to_datetime(df[date_col].astype(str).str.strip(), format="%Y %m %d")
 df["f30"] = pd.to_numeric(df[f30_col], errors="coerce")
 
+print("stop here")
+
+
 #%%
 # annual mean F30
 df["year"] = df["date"].dt.year
@@ -138,7 +141,7 @@ ax.set_title("TEC trend at 12 LT (2000–2024), using F30 as solar proxy")
 
 fig2_global.savefig(output_path/"fig2_global.png",dpi=300, bbox_inches="tight")
 plt.tight_layout()
-plt.show()
+plt.show(block=True)
 
 #histogram
 trend_values = trend_da.values[np.isfinite(trend_da.values)]
@@ -175,6 +178,6 @@ plt.ylim(0,5)
 plt.yticks(np.arange(0,5,1))
 fig2_trend.savefig(output_path/"fig2_trend.png",dpi=300, bbox_inches="tight")
 plt.tight_layout()
-plt.show()
+plt.show(block=True)
 
 # %%
