@@ -173,20 +173,25 @@ print("\n=== TREND DATAARRAY ===")
 print(trend_da)
 
 #trend map
-plt.figure(figsize=(12, 4))
+fig=plt.figure(figsize=(12, 5))
+ax=plt.axes(projection=ccrs.Mollweide())
 trend_da.plot(
+    ax=ax,
+    transform=ccrs.PlateCarree(),
     x="lon",
     y="lat",
     cmap="coolwarm",
-    robust=True
+    robust=True,
+    cbar_kwargs={"label": "Trend [TECU/year]","shrink": 0.8}
 )
-plt.title("TEC trend at 12 LT (2000–2024), using F30 as solar proxy")
-plt.xlabel("Longitude")
-plt.ylabel("Latitude")
+
+ax.coastlines()
+ax.set_title("TEC trend at 12 LT (2000–2024), using F30 as solar proxy")
+
 plt.tight_layout()
 plt.show()
 
-# 8. 画 histogram
+#histogram
 trend_values = trend_da.values[np.isfinite(trend_da.values)]
 
 mean_trend = np.mean(trend_values)
@@ -198,18 +203,29 @@ print("Std trend  =", std_trend)
 print("Valid grid count =", len(trend_values))
 
 plt.figure(figsize=(8, 5))
-plt.hist(trend_values, bins=80, density=True)
-plt.axvline(mean_trend, linestyle="--", label="Mean")
+
+plt.hist(trend_values, bins=150, density=True)
+
+plt.axvline(mean_trend,color="black", linestyle="--", label="Mean")
+plt.axvline(0, color="black", linestyle="-")
+
 plt.xlabel("Trend [TECU/year]")
 plt.ylabel("Density")
 plt.title("Trend 12 LT")
 plt.legend()
+
 plt.text(
     0.05, 0.95,
     f"Mean: {mean_trend:.3f} TECU\nStd: {std_trend:.3f} TECU",
     transform=plt.gca().transAxes,
     va="top"
 )
+
+plt.xlim(-0.8,0.6)
+plt.xticks(np.arange(-0.8,0.6,0.2))
+plt.ylim(0,5)
+plt.yticks(np.arange(0,5,1))
+
 plt.tight_layout()
 plt.show()
 
