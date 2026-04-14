@@ -19,69 +19,32 @@ tec = ds["atec"].transpose("time", "lat", "lon")
 tec_years = ds["time"].dt.year.values
 
 df = pd.read_csv(csv_path)
-
-date_col = df.columns[0]
-f30_col  = df.columns[1]
-
-
 df.columns = [c.strip() for c in df.columns]
 date_col = df.columns[0]
 f30_col  = df.columns[1]
-
 df["date"] = pd.to_datetime(df[date_col].astype(str).str.strip(), format="%Y %m %d")
-
-# 数值列转成 float
 df["f30"] = pd.to_numeric(df[f30_col], errors="coerce")
 
 #%%
-# =========================
-# 3. 按年份求 annual mean F30
-# =========================
+# annual mean F30
 df["year"] = df["date"].dt.year
-
 f30_annual = df.groupby("year", as_index=False)["f30"].mean()
 
-print("\n=== ANNUAL F30 ===")
-print(f30_annual.head())
-print(f30_annual.tail())
-
-#%%
-# =========================
-# 4. 和 TEC 年份对齐
-# =========================
+# merge with tec_years 
 tec_year_df = pd.DataFrame({"year": tec_years})
 merged = tec_year_df.merge(f30_annual, on="year", how="left")
-
-print("\n=== MERGED YEARS ===")
-print(merged)
-
 f30_values = merged["f30"].values.astype(float)
 
-print("\n=== FINAL F30 VALUES ===")
-print(f30_values)
-print("length =", len(f30_values))
-
-# 检查有没有缺失
-print("NaN count in annual F30:", np.isnan(f30_values).sum())
-print(len(tec_years), len(f30_values))
-
-
 #%%
-# 纬度权重：cos(latitude)
+# cos(latitude)
 weights = np.cos(np.deg2rad(ds["lat"]))
 weights.name = "weights"
 
-# 加权全球平均，自动按 time 保留成一条年序列
+# yearly mean TEC weighted by cos(latitude)
 global_mean_tec = tec.weighted(weights).mean(dim=("lat", "lon"))
 
-print("\n=== GLOBAL MEAN TEC ===")
-print(global_mean_tec)
-print("shape =", global_mean_tec.shape)
-print("values =", global_mean_tec.values)
-
-# =========================
-# 6. 计算 r 和 r^2
-# =========================
+#%%
+# r and r^2
 tec_values = global_mean_tec.values.astype(float)
 proxy_values = f30_values.astype(float)
 
@@ -94,7 +57,7 @@ print("r  =", r)
 print("r² =", r2)
 
 #%%
-# 6. Figure 2: double-step trend using F30
+#double-step method
 years = tec_years.astype(float)
 
 def compute_beta(tec_series, proxy_series, year_series):
@@ -129,6 +92,8 @@ def compute_beta(tec_series, proxy_series, year_series):
 
     return beta
 
+
+#trend map
 nlat = tec.sizes["lat"]
 nlon = tec.sizes["lon"]
 
@@ -149,10 +114,7 @@ trend_da = xr.DataArray(
     name="trend"
 )
 
-print("\n=== TREND DATAARRAY ===")
-print(trend_da)
 
-#trend map
 fig2_global=plt.figure(figsize=(12, 5))
 ax=plt.axes(projection=ccrs.Mollweide())
 trend_da.plot(
@@ -178,7 +140,6 @@ trend_values = trend_da.values[np.isfinite(trend_da.values)]
 mean_trend = np.mean(trend_values)
 std_trend = np.std(trend_values)
 
-print("\n=== HISTOGRAM STATS ===")
 print("Mean trend =", mean_trend)
 print("Std trend  =", std_trend)
 print("Valid grid count =", len(trend_values))
