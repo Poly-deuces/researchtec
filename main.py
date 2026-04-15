@@ -26,9 +26,6 @@ f30_col  = df.columns[1]
 df["date"] = pd.to_datetime(df[date_col].astype(str).str.strip(), format="%Y %m %d")
 df["f30"] = pd.to_numeric(df[f30_col], errors="coerce")
 
-print("stop here")
-
-
 #%%
 # annual mean F30
 df["year"] = df["date"].dt.year
@@ -180,4 +177,4 @@ fig2_trend.savefig(output_path/"fig2_trend.png",dpi=300, bbox_inches="tight")
 plt.tight_layout()
 plt.show(block=True)
 
-# %%
+#%%
