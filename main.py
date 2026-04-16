@@ -8,59 +8,139 @@ import matplotlib.cm as cm
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from pathlib import Path
+from config import RegionSpec, AnalysisConfig
+
+
+iceland = RegionSpec(
+    name="Iceland",
+    lat_min=63.0,
+    lat_max=67.0,
+    lon_min=-25.0,
+    lon_max=-13.0
+)
+
+same_lat_band = RegionSpec(
+    name="Iceland_same_lat_band",
+    lat_min=63.0,
+    lat_max=67.0,
+    lon_min=-180.0,
+    lon_max=180.0
+)
+
+global_region = RegionSpec(
+    name="Global",
+    lat_min=-90.0,
+    lat_max=90.0,
+    lon_min=-180.0,
+    lon_max=180.0
+)
+
+cfg_12lt_f30 = AnalysisConfig(
+    lt=12,
+    proxy_name="F30"
+)
+
 
 #%%
-basedir = Path(__file__).parent
-tec_path = basedir/"data"/"tec"/"12_year_avg.nc"
-csv_path = basedir/"data"/"solar_proxies"/"cls_radio_flux_f30.csv"
-output_path=basedir/"results"
+def load_tec_and_proxy():
+    basedir = Path(__file__).parent
+    tec_path = basedir / "data" / "tec" / "12_year_avg.nc"
+    csv_path = basedir / "data" / "solar_proxies" / "cls_radio_flux_f30.csv"
+    output_path = basedir / "results"
+    output_path.mkdir(parents=True, exist_ok=True)
 
-ds = xr.open_dataset(tec_path, engine="netcdf4")
-tec = ds["atec"].transpose("time", "lat", "lon")
-tec_years = ds["time"].dt.year.values
+    # read tec
+    ds = xr.open_dataset(tec_path, engine="netcdf4")
+    tec = ds["atec"].transpose("time", "lat", "lon")
+    years = ds["time"].dt.year.values.astype(float)
 
-df = pd.read_csv(csv_path)
-df.columns = [c.strip() for c in df.columns]
-date_col = df.columns[0]
-f30_col  = df.columns[1]
-df["date"] = pd.to_datetime(df[date_col].astype(str).str.strip(), format="%Y %m %d")
-df["f30"] = pd.to_numeric(df[f30_col], errors="coerce")
+    # read proxy csv
+    df = pd.read_csv(csv_path)
+    df.columns = [c.strip() for c in df.columns]
 
-#%%
-# annual mean F30
-df["year"] = df["date"].dt.year
-f30_annual = df.groupby("year", as_index=False)["f30"].mean()
+    date_col = df.columns[0]
+    f30_col = df.columns[1]
 
-# merge with tec_years 
-tec_year_df = pd.DataFrame({"year": tec_years})
-merged = tec_year_df.merge(f30_annual, on="year", how="left")
-f30_values = merged["f30"].values.astype(float)
+    df["date"] = pd.to_datetime(
+        df[date_col].astype(str).str.strip(),
+        format="%Y %m %d"
+    )
+    df["f30"] = pd.to_numeric(df[f30_col], errors="coerce")
 
-#%%
-# cos(latitude)
-weights = np.cos(np.deg2rad(ds["lat"]))
-weights.name = "weights"
+    # annual mean F30
+    df["year"] = df["date"].dt.year
+    f30_annual = df.groupby("year", as_index=False)["f30"].mean()
 
-# yearly mean TEC weighted by cos(latitude)
-global_mean_tec = tec.weighted(weights).mean(dim=("lat", "lon"))
+    # align to TEC years
+    tec_year_df = pd.DataFrame({"year": years.astype(int)})
+    merged = tec_year_df.merge(f30_annual, on="year", how="left")
+    f30_values = merged["f30"].values.astype(float)
 
-#%%
+    return ds, tec, years, f30_values, output_path
+
+
+def area_weighted_mean(da):
+    """
+    da: xarray.DataArray with dims including (time, lat, lon)
+    return: weighted mean over lat/lon, keeping time
+    """
+    weights = np.cos(np.deg2rad(da["lat"]))
+    weights.name = "weights"
+    return da.weighted(weights).mean(dim=("lat", "lon"))
+
+
+def compute_r(tec_values, proxy_values):
+    mask = np.isfinite(tec_values) & np.isfinite(proxy_values)
+    r = np.corrcoef(tec_values[mask], proxy_values[mask])[0, 1]
+    r2 = r ** 2
+    return r, r2
+
+
+def subset_region(tec, region):
+    """
+    tec   : DataArray(time, lat, lon)
+    region: RegionSpec
+    """
+    return tec.sel(
+        lat=slice(region.lat_min, region.lat_max),
+        lon=slice(region.lon_min, region.lon_max)
+    )
+
+
+# load data
+ds, tec, years, f30_values, output_path = load_tec_and_proxy()
+
+# global weighted mean TEC
+global_mean_tec = area_weighted_mean(tec)
+
 # r and r^2
 tec_values = global_mean_tec.values.astype(float)
 proxy_values = f30_values.astype(float)
 
-mask = np.isfinite(tec_values) & np.isfinite(proxy_values)
-
-r = np.corrcoef(tec_values[mask], proxy_values[mask])[0, 1]
-r2 = r ** 2
+r, r2 = compute_r(tec_values, proxy_values)
 
 print("r  =", r)
 print("r² =", r2)
 
+
+# load data
+ds, tec, years, f30_values, output_path = load_tec_and_proxy()
+
+# global weighted mean TEC
+global_mean_tec = area_weighted_mean(tec)
+
+# r and r^2
+tec_values = global_mean_tec.values.astype(float)
+proxy_values = f30_values.astype(float)
+
+r, r2 = compute_r(tec_values, proxy_values)
+
+print("r  =", r)
+print("r² =", r2)
+
+
 #%%
 #double-step method
-years = tec_years.astype(float)
-
 def compute_beta(tec_series, proxy_series, year_series):
     """
     tec_series   : 1D array, TEC at one grid point across years
