@@ -67,7 +67,12 @@ def compute_beta(tec_series, proxy_series, year_series):
     return beta
 
 
-def compute_trend_map(tec, f30_values, years):
+def subset_region(tec,region):
+    return tec.sel(lat=slice(region.lat_min, region.lat_max),
+                   lon=slice(region.lon_min, region.lon_max))
+
+
+def compute_trend_map(tec, f30_values, tec_years):
     nlat = tec.sizes["lat"]
     nlon = tec.sizes["lon"]
 
@@ -76,7 +81,7 @@ def compute_trend_map(tec, f30_values, years):
     for i in range(nlat):
         for j in range(nlon):
             tec_series = tec[:, i, j].values
-            trend_map[i, j] = compute_beta(tec_series, f30_values, years)
+            trend_map[i, j] = compute_beta(tec_series, f30_values, tec_years)
 
     trend_da = xr.DataArray(
         trend_map,
