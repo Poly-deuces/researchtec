@@ -49,6 +49,9 @@ def compute_beta(tec_series, proxy_series, year_series):
 
     if mask.sum() != len(year_series):
         return np.nan
+    #if mask.sum() < 24:  # require at least 20 valid points to compute a reliable trend
+        #return np.nan
+
 
     tec_valid = tec_series[mask]
     proxy_valid = proxy_series[mask]
