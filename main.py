@@ -21,10 +21,10 @@ def main():
 
     tec, tec_years, f30_values = load_tec_and_proxy(tec_path, csv_path)
 
-    global_mean_tec = area_weighted_mean(tec)
-    tec_values = global_mean_tec.values.astype(float)
+    #global_mean_tec = area_weighted_mean(tec)
+    #tec_values = global_mean_tec.values.astype(float)
 
-    r, r2 = compute_r(tec_values, proxy_values=f30_values)
+    #r1, r2 = compute_r(tec, proxy_values=f30_values)
 
     regions = {
         "global": tec,
@@ -38,6 +38,15 @@ def main():
     }
 
     trend_da = trend_results["global"]
+    global_trend_mean=area_weighted_mean(trend_da)
+    print(f"Global mean trend: {global_trend_mean:.4f} TEC units per year")
+
+    iceland_trend_mean=area_weighted_mean(trend_results["iceland"])
+    print(f"Iceland mean trend: {iceland_trend_mean:.4f} TEC units per year")
+
+    same_lat_band_trend_mean=area_weighted_mean(trend_results["same_lat_band"])
+    print(f"Same Latitude Band mean trend: {same_lat_band_trend_mean:.4f} TEC units per year")
+
 
     plot_trend_map(trend_da, output_path)
     plot_histogram(trend_da, output_path)
