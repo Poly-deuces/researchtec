@@ -26,32 +26,18 @@ def main():
 
     r, r2 = compute_r(tec_values, proxy_values=f30_values)
 
-
-    # region loop
     regions = {
-        "global": global_region,
-        "iceland": iceland,
-        "same_lat_band": same_lat_band,
+        "global": tec,
+        "iceland": subset_region(tec, iceland),
+        "same_lat_band": subset_region(tec, same_lat_band),
     }
 
-    trend_results = {}
+    trend_results = {
+        name: compute_trend_map(region_tec, f30_values, tec_years)
+        for name, region_tec in regions.items()
+    }
 
-    for name, region in regions.items():
-        if name == "global":
-            region_tec = tec
-        else:
-            region_tec = subset_region(tec, region)
-
-        trend_results[name] = compute_trend_map(region_tec, f30_values, tec_years)
-
-    # 先沿用你原来的 global 出图
     trend_da = trend_results["global"]
-
-    # 如果你想临时看 Iceland / same_lat_band 的 histogram，可以再加：
-    plot_histogram(trend_results["iceland"], output_path)
-    plot_histogram(trend_results["same_lat_band"], output_path)
-
-    trend_da = compute_trend_map(tec, f30_values, tec_years)
 
     plot_trend_map(trend_da, output_path)
     plot_histogram(trend_da, output_path)

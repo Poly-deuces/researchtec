@@ -10,8 +10,8 @@ iceland = RegionSpec(
 
 same_lat_band = RegionSpec(
     name="Iceland_same_lat_band",
-    lat_min=63.0,
-    lat_max=67.0,
+    lat_min=60.0,
+    lat_max=90.0,
     lon_min=-180.0,
     lon_max=180.0
 )
