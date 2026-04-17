@@ -28,7 +28,7 @@ def load_tec_and_proxy(tec_path, csv_path):
     merged = tec_year_df.merge(f30_annual, on="year", how="left")
     f30_values = merged["f30"].values.astype(float)
 
-    return ds, tec, tec_years, f30_values
+    return tec, tec_years, f30_values
 
 
 def area_weighted_mean(da):
@@ -41,6 +41,9 @@ def compute_r(tec_values, proxy_values):
     mask = np.isfinite(tec_values) & np.isfinite(proxy_values)
     r = np.corrcoef(tec_values[mask], proxy_values[mask])[0, 1]
     r2 = r ** 2
+    print("r  =", r)
+    print("r² =", r2)
+
     return r, r2
 
 

@@ -19,28 +19,13 @@ def main():
     csv_path = basedir / "data" / "solar_proxies" / "cls_radio_flux_f30.csv"
     output_path = basedir / "results"
 
-    ds, tec, tec_years, f30_values = load_tec_and_proxy(tec_path, csv_path)
+    tec, tec_years, f30_values = load_tec_and_proxy(tec_path, csv_path)
 
     global_mean_tec = area_weighted_mean(tec)
     tec_values = global_mean_tec.values.astype(float)
 
-    r, r2 = compute_r(tec_values, f30_values)
+    r, r2 = compute_r(tec_values, proxy_values=f30_values)
 
-    print("r  =", r)
-    print("r² =", r2)
-
-    years = tec_years.astype(float)
-
-
-# 保留 global 的 r / r² 检查
-    global_mean_tec = area_weighted_mean(tec)
-    tec_values = global_mean_tec.values.astype(float)
-    proxy_values = f30_values.astype(float)
-
-    r, r2 = compute_r(tec_values, proxy_values)
-
-    print("r  =", r)
-    print("r² =", r2)
 
     # region loop
     regions = {
@@ -57,7 +42,7 @@ def main():
         else:
             region_tec = subset_region(tec, region)
 
-        trend_results[name] = compute_trend_map(region_tec, f30_values, years)
+        trend_results[name] = compute_trend_map(region_tec, f30_values, tec_years)
 
     # 先沿用你原来的 global 出图
     trend_da = trend_results["global"]
