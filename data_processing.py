@@ -17,18 +17,18 @@ def load_tec_and_proxy(tec_path, csv_path):
         df[date_col].astype(str).str.strip(),
         format="%Y %m %d"
     )
-    df["f30"] = pd.to_numeric(df[f30_col], errors="coerce")
+    df["proxy"] = pd.to_numeric(df[f30_col], errors="coerce")
 
     # annual mean F30
     df["year"] = df["date"].dt.year
-    f30_annual = df.groupby("year", as_index=False)["f30"].mean()
+    proxy_annual = df.groupby("year", as_index=False)["proxy"].mean()
 
     # merge with tec_years
     tec_year_df = pd.DataFrame({"year": tec_years})
-    merged = tec_year_df.merge(f30_annual, on="year", how="left")
-    f30_values = merged["f30"].values.astype(float)
+    merged = tec_year_df.merge(proxy_annual, on="year", how="left")
+    proxy_values = merged["proxy"].values.astype(float)
 
-    return tec, tec_years, f30_values
+    return tec, tec_years, proxy_values
 
 
 def area_weighted_mean(da):
