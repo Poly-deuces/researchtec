@@ -4,74 +4,71 @@ import numpy as np
 
 from data_processing import (
     load_tec_and_proxy,
+    prepare_region_tec,
     area_weighted_mean,
     compute_r,
     compute_beta,
     compute_trend_map,
     subset_region,
 )
-from config_settings import Greenland, lt_list, proxy_list
+from config_settings import Greenland,Greenland_island, lt_list, proxy_list
 from plotting import plot_trend_map, plot_histogram, plot_regional_trend_map,plot_regional_histogram
 
 
 def main():
     basedir = Path(__file__).parent
+    boudary_path = basedir / "data" / "Greenland_coast.shp"
     output_path = basedir / "results"
 
-    trend_summary={
-        "proxy":[],
-        "lt":[],
-        "Greenland":[],
-        "r":[],
-        "r2":[],
-        "std_trend":[],
-        "mean_trend":[],
-    }
+    trend_records = []
 
     for proxy in proxy_list:
         for lt in lt_list:
             tec_path = basedir / "data" / "tec" / f"{lt}_year_avg.nc"   
             csv_path = basedir / "data" / "solar_proxies" / f"{proxy}.csv"
             tec, tec_years, proxy_values = load_tec_and_proxy(tec_path=tec_path, csv_path=csv_path)
-            
-            Greenland_mean_tec = area_weighted_mean(subset_region(tec, Greenland))
-            Greenland_mean_tec_values = Greenland_mean_tec.values.astype(float)
-
-            r, r2 = compute_r(Greenland_mean_tec_values, proxy_values=proxy_values)
 
             regions = {
-                "Greenland": subset_region(tec, Greenland),
+                "Greenland": Greenland,
+                "Greenland_island": Greenland_island,
                 }
 
-            trend_results = {
-                name: compute_trend_map(region_tec, proxy_values, tec_years)
-                for name, region_tec in regions.items()
-            }
+            for region_name,region_tec in regions.items():
+                region_tec = prepare_region_tec(tec=tec, region=regions[region_name], boundary_path=boudary_path)
+                region_mean_tec = area_weighted_mean(region_tec)
+                region_mean_tec_values = region_mean_tec.values.astype(float)
+                r,r2 = compute_r(proxy_values, region_mean_tec_values)
+                region_trend_da = compute_trend_map(region_tec, proxy_values, tec_years)
+                region_trend_mean=area_weighted_mean(region_trend_da)
 
-            Greenland_trend_da = trend_results["Greenland"]
-            Greenland_trend_mean=area_weighted_mean(trend_results["Greenland"])
+                trend_values = region_trend_da.values[np.isfinite(region_trend_da.values)]
 
-            trend_values = Greenland_trend_da.values[np.isfinite(Greenland_trend_da.values)]
+                mean_trend = np.mean(trend_values)
+                std_trend = np.std(trend_values)
+                        
+                trend_records.append({
+                    "lt": lt,
+                    "proxy": proxy,
+                    "region": region_name,
+                    "r": r,
+                    "r2": r2,
+                    "std_trend": std_trend,
+                    "mean_trend": mean_trend
+                })
 
-            mean_trend = np.mean(trend_values)
-            std_trend = np.std(trend_values)
-                    
-            trend_summary["lt"].append(lt)
-            #trend_summary["global"].append(float(global_trend_mean))
-            trend_summary["Greenland"].append(float(Greenland_trend_mean))
-            trend_summary["proxy"].append(proxy)
-            trend_summary["r"].append(r)
-            trend_summary["r2"].append(r2)
-            trend_summary["std_trend"].append(std_trend)
-            trend_summary["mean_trend"].append(mean_trend)
 
-        trend_df=pd.DataFrame(trend_summary)
-        trend_df.to_csv(output_path / "trend_summary.csv", index=False)
+            plot_trend_map(region_trend_da, output_path, lt, proxy, region_name)
+            plot_histogram(region_trend_da, output_path, lt, proxy, region_name)
 
-        print(trend_summary)
+    trend_df=pd.DataFrame(trend_records)
+    trend_df.to_csv(output_path / "trend_summary.csv", index=False)
+
+    print(trend_records)
+
+
 
 """     
-        plot_trend_map(trend_da, output_path)
+        plot_trend_map(trend_da, output_path, lt, proxy)
         plot_histogram(trend_da, output_path)
         plot_regional_trend_map(trend_results["iceland"], Greenland, output_path, "fig2_iceland.png", "Iceland")
         plot_regional_histogram(trend_results["iceland"], output_path, "fig2    iceland_histogram.png", "Iceland")

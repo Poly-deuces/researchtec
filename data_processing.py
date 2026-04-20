@@ -1,7 +1,8 @@
 import xarray as xr
 import numpy as np
 import pandas as pd
-
+import geopandas as gpd
+from shapely import contains_xy
 
 def load_tec_and_proxy(tec_path, csv_path):
     ds = xr.open_dataset(tec_path, engine="netcdf4")
@@ -30,6 +31,42 @@ def load_tec_and_proxy(tec_path, csv_path):
 
     return tec, tec_years, proxy_values
 
+def build_greenland_mask(tec_box, boundary_path):
+    """
+    tec_box: 已经按矩形框裁切后的 DataArray, dims = (time, lat, lon)
+    boundary_path: Greenland 边界文件路径（shp 或 geojson）
+    return: mask_da, dims = (lat, lon), True 表示岛内
+    """
+    gdf = gpd.read_file(boundary_path)
+    gdf = gdf.to_crs("EPSG:4326")
+
+    # 如果文件里只有 Greenland 一个对象，直接 union
+    # 如果有多行，也会合并成一个 polygon / multipolygon
+    poly = gdf.geometry.union_all()
+
+    # 生成网格点中心
+    lon2d, lat2d = np.meshgrid(tec_box["lon"].values, tec_box["lat"].values)
+
+    # 判断每个格点中心是否落在 polygon 内
+    mask_np = contains_xy(poly, lon2d, lat2d)
+
+    mask_da = xr.DataArray(
+        mask_np,
+        coords={"lat": tec_box["lat"], "lon": tec_box["lon"]},
+        dims=("lat", "lon"),
+        name="greenland_mask"
+    )
+
+    return mask_da
+
+def prepare_region_tec(tec, region, boundary_path=None):
+    region_tec = subset_region(tec, region)
+
+    if region.use_mask:
+        mask_da = build_greenland_mask(region_tec, boundary_path)
+        region_tec = region_tec.where(mask_da)
+
+    return region_tec
 
 def area_weighted_mean(da):
     weights = np.cos(np.deg2rad(da["lat"]))

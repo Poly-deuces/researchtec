@@ -7,10 +7,6 @@ class RegionSpec:
     lat_max: float
     lon_min: float
     lon_max: float
-    
-
-@dataclass
-class AnalysisConfig:
-    lt: int
-    proxy_name: str = "F30" 
+    use_mask: bool = False 
+ 
  
