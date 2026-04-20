@@ -41,8 +41,6 @@ def compute_r(tec_values, proxy_values):
     mask = np.isfinite(tec_values) & np.isfinite(proxy_values)
     r = np.corrcoef(tec_values[mask], proxy_values[mask])[0, 1]
     r2 = r ** 2
-    print("r  =", r)
-    print("r² =", r2)
 
     return r, r2
 
@@ -78,7 +76,7 @@ def subset_region(tec,region):
                    lon=slice(region.lon_min, region.lon_max))
 
 
-def compute_trend_map(tec, f30_values, tec_years):
+def compute_trend_map(tec, proxy_values, tec_years):
     nlat = tec.sizes["lat"]
     nlon = tec.sizes["lon"]
 
@@ -87,7 +85,7 @@ def compute_trend_map(tec, f30_values, tec_years):
     for i in range(nlat):
         for j in range(nlon):
             tec_series = tec[:, i, j].values
-            trend_map[i, j] = compute_beta(tec_series, f30_values, tec_years)
+            trend_map[i, j] = compute_beta(tec_series, proxy_values, tec_years)
 
     trend_da = xr.DataArray(
         trend_map,

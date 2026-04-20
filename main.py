@@ -1,5 +1,6 @@
 from pathlib import Path
 import pandas as pd
+import numpy as np
 
 from data_processing import (
     load_tec_and_proxy,
@@ -21,6 +22,10 @@ def main():
         "proxy":[],
         "lt":[],
         "Greenland":[],
+        "r":[],
+        "r2":[],
+        "std_trend":[],
+        "mean_trend":[],
     }
 
     for proxy in proxy_list:
@@ -28,11 +33,11 @@ def main():
             tec_path = basedir / "data" / "tec" / f"{lt}_year_avg.nc"   
             csv_path = basedir / "data" / "solar_proxies" / f"{proxy}.csv"
             tec, tec_years, proxy_values = load_tec_and_proxy(tec_path=tec_path, csv_path=csv_path)
+            
+            Greenland_mean_tec = area_weighted_mean(subset_region(tec, Greenland))
+            Greenland_mean_tec_values = Greenland_mean_tec.values.astype(float)
 
-        #global_mean_tec = area_weighted_mean(tec)
-        #tec_values = global_mean_tec.values.astype(float)
-
-        #r1, r2 = compute_r(tec, proxy_values=proxy_values)
+            r, r2 = compute_r(Greenland_mean_tec_values, proxy_values=proxy_values)
 
             regions = {
                 "Greenland": subset_region(tec, Greenland),
@@ -43,15 +48,22 @@ def main():
                 for name, region_tec in regions.items()
             }
 
-            #trend_da = trend_results["global"]
-            #global_trend_mean=area_weighted_mean(trend_da)
+            Greenland_trend_da = trend_results["Greenland"]
             Greenland_trend_mean=area_weighted_mean(trend_results["Greenland"])
+
+            trend_values = Greenland_trend_da.values[np.isfinite(Greenland_trend_da.values)]
+
+            mean_trend = np.mean(trend_values)
+            std_trend = np.std(trend_values)
                     
             trend_summary["lt"].append(lt)
             #trend_summary["global"].append(float(global_trend_mean))
             trend_summary["Greenland"].append(float(Greenland_trend_mean))
             trend_summary["proxy"].append(proxy)
-
+            trend_summary["r"].append(r)
+            trend_summary["r2"].append(r2)
+            trend_summary["std_trend"].append(std_trend)
+            trend_summary["mean_trend"].append(mean_trend)
 
         trend_df=pd.DataFrame(trend_summary)
         trend_df.to_csv(output_path / "trend_summary.csv", index=False)
