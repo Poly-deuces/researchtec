@@ -12,7 +12,7 @@ from data_processing import (
     subset_region,
 )
 from config_settings import Greenland,Greenland_island, lt_list, proxy_list
-from plotting import plot_trend_map, plot_histogram, plot_regional_trend_map,plot_regional_histogram
+from plotting import plot_trend_map, plot_histogram
 
 
 def main():
@@ -40,7 +40,7 @@ def main():
                 r,r2 = compute_r(proxy_values, region_mean_tec_values)
                 region_trend_da = compute_trend_map(region_tec, proxy_values, tec_years)
                 region_trend_mean=area_weighted_mean(region_trend_da)
-
+                region_trend_mean_value=region_trend_mean.values.astype(float)
                 trend_values = region_trend_da.values[np.isfinite(region_trend_da.values)]
 
                 mean_trend = np.mean(trend_values)
@@ -52,13 +52,14 @@ def main():
                     "region": region_name,
                     "r": r,
                     "r2": r2,
+                    "region_trend_mean": region_trend_mean_value,
                     "std_trend": std_trend,
                     "mean_trend": mean_trend
                 })
 
 
-            plot_trend_map(region_trend_da, output_path, lt, proxy, region_name)
-            plot_histogram(region_trend_da, output_path, lt, proxy, region_name)
+                plot_trend_map(region_trend_da, output_path, lt, proxy, region_name)
+                plot_histogram(region_trend_da, output_path, lt, proxy, region_name)
 
     trend_df=pd.DataFrame(trend_records)
     trend_df.to_csv(output_path / "trend_summary.csv", index=False)
